@@ -16,6 +16,7 @@ function searchHotkeys(answers: any, input = "") {
       extract: (el) => (el[0] + el[2]).toString(),
     });
 
+    if (results.length === 0) resolve(["No results found"]);
     const matches = results.map((el) => hotkeys[el.index]);
     const table = drawTable(matches);
 
