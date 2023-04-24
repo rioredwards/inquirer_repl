@@ -5,7 +5,7 @@ import { drawTable } from "./table.js";
 import { hotkeys } from "./hotkeys.js";
 
 async function main() {
-  inquirer.registerPrompt("autocomplete", inquirerPrompt);
+  inquirer.registerPrompt("searchHotkeys", inquirerPrompt);
 
   function searchHotkeys(answers: Answers, input = "") {
     return new Promise((resolve) => {
@@ -24,19 +24,38 @@ async function main() {
   try {
     const answers: Answers = await inquirer.prompt([
       {
-        type: "autocomplete",
-        name: "hotkeys",
+        type: "list",
+        name: "action",
+        message: "What would you like to do?",
+        default: "list",
+        choices: [
+          { name: "LIST", value: "list" },
+          { name: "SEARCH", value: "search" },
+          { name: "ADD", value: "add" },
+          { name: "EDIT", value: "edit" },
+          { name: "DELETE", value: "delete" },
+          { name: "EXIT", value: "exit" },
+        ],
+      },
+      {
+        type: "searchHotkeys",
+        name: "hotkey",
         suggestOnly: false,
-        message: "Search for a hotkey",
+        message: (answers) => `Select a hotkey to ${answers.action}`,
         searchText: "Searching...",
         emptyText: "Nothing found!",
         source: searchHotkeys,
         pageSize: 24,
       },
     ]);
-    console.log(answers);
-  } catch (err) {
-    console.error(err);
+    const chosenHotkey = answers.hotkey;
+    console.log(chosenHotkey);
+  } catch (err: any) {
+    if ("isTtyError" in err) {
+      console.log("Prompt couldn't be rendered in the current environment");
+    } else {
+      console.error(err);
+    }
   }
 }
 
