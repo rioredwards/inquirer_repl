@@ -124,10 +124,7 @@ function createTopOrBottom(rowPos: "top" | "bottom", colWidths: number[]) {
   }
 }
 
-export function drawTable(table: string[][]) {
-  // Clear screen
-  // console.log("\n".repeat(10));
-
+export function createTable(table: string[][], options?: "full" | "cellsOnly") {
   const trimmedCells = table.map((row) => row.map((cell) => cell.trim()));
   const truncatedCells = truncateCells(trimmedCells);
   const columns = getColumns(truncatedCells);
@@ -137,14 +134,16 @@ export function drawTable(table: string[][]) {
   const topRow = createTopOrBottom("top", formattedWidths);
   const bottomRow = createTopOrBottom("bottom", formattedWidths);
 
-  // Print table
-  // console.log(topRow);
-  // formattedTable.forEach((row) => {
-  //   console.log(row);
-  // });
-  // console.log(bottomRow);
+  const result =
+    options === "full"
+      ? [topRow, ...formattedTable, bottomRow]
+      : formattedTable;
 
-  // Return table
-  const fullTable = [topRow, ...formattedTable, bottomRow];
-  return formattedTable;
+  return result;
+}
+
+export function printTable(table: string[][]) {
+  table.forEach((row) => {
+    console.log(row);
+  });
 }
