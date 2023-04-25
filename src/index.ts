@@ -1,3 +1,5 @@
+// Sandbox for inquirer: https://www.npmjs.com/package/inquirer#prompt
+
 import inquirer, { Answers } from "inquirer";
 import fuzzy from "fuzzy";
 import inquirerPrompt from "inquirer-autocomplete-prompt";
@@ -7,7 +9,7 @@ import { hotkeys } from "./hotkeys.js";
 type ActionType = "list" | "search" | "add" | "edit" | "delete" | "exit";
 type ActionNameType = "LIST" | "SEARCH" | "ADD" | "EDIT" | "DELETE" | "EXIT";
 
-const choices: Array<{ name: ActionNameType; value: ActionType }> = [
+const actionChoices: Array<{ name: ActionNameType; value: ActionType }> = [
   { name: "LIST", value: "list" },
   { name: "SEARCH", value: "search" },
   { name: "ADD", value: "add" },
@@ -16,51 +18,91 @@ const choices: Array<{ name: ActionNameType; value: ActionType }> = [
   { name: "EXIT", value: "exit" },
 ];
 
+const keyChoices = [
+  { name: "⇧ Shift", value: "⇧" },
+  { name: "⌃ Ctrl", value: "⌃" },
+  { name: "⌘ Cmd", value: "⌘" },
+  { name: "⌥ Alt/Option", value: "⌥" },
+  { name: "Fn", value: "FN" },
+  { name: "⇥ Tab", value: "⇥" },
+  { name: "↩ Enter/Return", value: "↩" },
+  { name: "Space", value: "Space" },
+  { name: "⌫ Backspace/Delete", value: "⌫" },
+  { name: "⎋ Esc", value: "⎋" },
+  { name: "↑ Up", value: "↑" },
+  { name: "↓ Down", value: "↓" },
+  { name: "← Left", value: "←" },
+  { name: "→ Right", value: "→" },
+  { name: "⊞ Win", value: "⊞" },
+  { name: " Apple", value: "" },
+];
+
+const questions = [
+  {
+    type: "list",
+    name: "action",
+    message: "Enter a key combo",
+    choices: keyChoices,
+    pageSize: 16,
+    loop: false,
+  },
+  {
+    type: "list",
+    name: "action",
+    message: "What would you like to do?",
+    default: "list",
+    choices: actionChoices,
+  },
+  {
+    type: "searchHotkeys",
+    name: "selectedHotkey",
+    suggestOnly: false,
+    when: (answers: Answers) => shouldAsk("search", answers),
+    message: (answers: Answers) => `Select a hotkey to ${answers.action}`,
+    searchText: "Searching...",
+    emptyText: "Nothing found!",
+    source: searchHotkeys,
+    pageSize: 24,
+  },
+  {
+    type: "addHotkey",
+    name: "hotkeyToAdd",
+    suggestOnly: true,
+    when: (answers: Answers) => shouldAsk("add", answers),
+    message: "Add a hotkey",
+    searchText: "Searching...",
+    emptyText: "Nothing found!",
+    source: searchHotkeys,
+    pageSize: 24,
+  },
+];
+
+function searchHotkeys(answers: Answers, input = "") {
+  return new Promise((resolve) => {
+    const results = fuzzy.filter(input, hotkeys, {
+      extract: (hotkey) => [...hotkey].toString(),
+    });
+
+    if (results.length === 0) resolve(["No results found"]);
+    const matches = results.map((hotkey) => hotkeys[hotkey.index]);
+    const table = createTable(matches, "cellsOnly");
+    resolve(table);
+  });
+}
+
+function listHotkeys() {
+  const table = createTable(hotkeys, "full");
+  console.log(table.join("\n"));
+}
+
 async function main() {
   inquirer.registerPrompt("searchHotkeys", inquirerPrompt);
-
-  function searchHotkeys(answers: Answers, input = "") {
-    return new Promise((resolve) => {
-      const results = fuzzy.filter(input, hotkeys, {
-        extract: (hotkey) => [...hotkey].toString(),
-      });
-
-      if (results.length === 0) resolve(["No results found"]);
-      const matches = results.map((hotkey) => hotkeys[hotkey.index]);
-      const table = createTable(matches, "cellsOnly");
-      resolve(table);
-    });
-  }
-
-  function listHotkeys() {
-    const table = createTable(hotkeys, "full");
-    console.log(table.join("\n"));
-  }
+  inquirer.registerPrompt("addHotkey", inquirerPrompt);
 
   try {
-    const answers: Answers = await inquirer.prompt<Answers>([
-      {
-        type: "list",
-        name: "action",
-        message: "What would you like to do?",
-        default: "list",
-        choices: choices,
-      },
-      {
-        type: "searchHotkeys",
-        name: "hotkey",
-        suggestOnly: false,
-        when: (answers) => shouldAsk("search", answers),
-        message: (answers) => `Select a hotkey to ${answers.action}`,
-        searchText: "Searching...",
-        emptyText: "Nothing found!",
-        source: searchHotkeys,
-        pageSize: 24,
-      },
-    ]);
-    // const chosenHotkey = answers.hotkey;
-    // console.log(chosenHotkey);
+    const answers: Answers = await inquirer.prompt(questions);
     if (answers.action === "list") listHotkeys();
+    if (answers.action === "exit") process.exit(0);
   } catch (err: any) {
     if ("isTtyError" in err) {
       console.log("Prompt couldn't be rendered in the current environment");
@@ -70,6 +112,7 @@ async function main() {
   }
 }
 
+// This function determines if the user should be asked a question based on their previous answers
 function shouldAsk(question: ActionType, answers: Answers) {
   const action = answers.action;
   switch (question) {
@@ -82,9 +125,19 @@ function shouldAsk(question: ActionType, answers: Answers) {
         default:
           return false;
       }
+    case "add":
+      switch (action) {
+        case "add":
+          return true;
+        default:
+          return false;
+      }
+      return true;
+    case "exit":
+      return false;
 
     default:
-      return true;
+      return false;
   }
 }
 
