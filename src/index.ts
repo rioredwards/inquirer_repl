@@ -22,10 +22,12 @@ async function main() {
     if (shouldAsk("add", answers)) {
       let continueAdding = true;
 
-      async function ask() {
-        const addAnswers = await inquirer.prompt(addQuestions);
+      async function ask(prevAnswers: Answers = {}) {
+        const addAnswers = await inquirer.prompt(addQuestions, prevAnswers);
         continueAdding = !addAnswers.isOkay;
-        if (continueAdding) await ask();
+        if (continueAdding) {
+          await ask(addAnswers);
+        }
       }
       if (continueAdding) await ask();
     }

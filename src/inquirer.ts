@@ -38,6 +38,8 @@ const keyChoices = [
   "",
 ];
 
+// name (to display in list), a value (to save in the answers hash), and a short (to display after selection)
+
 export const actionQuestions: QuestionCollection = [
   {
     type: "list",
@@ -68,8 +70,9 @@ export const addQuestions: QuestionCollection = [
     type: "list",
     name: "app",
     message: "Select an app",
-    choices: getAppChoices(),
-    lt: "All",
+    choices: searchAppChoices,
+    default: (answers: Answers) => answers.app || null,
+    askAnswered: true,
   },
   {
     type: "addHotkey",
@@ -79,17 +82,20 @@ export const addQuestions: QuestionCollection = [
     source: searchKeyChoices,
     pageSize: 12,
     loop: true,
+    default: (answers: Answers) => answers.hotkeyToAdd || null,
     validate: (input: string) => {
       if (!input)
         return "TAB to select from list <-> SPACE to add next key <-> TYPE to add a new key <-> ENTER to confirm";
       return true;
     },
+    askAnswered: true,
   },
   {
     type: "confirm",
     name: "isOkay",
     message: (answers) => `Is this ok? ${answers.hotkeyToAdd}`,
     default: true,
+    askAnswered: true,
   },
 ];
 
@@ -115,10 +121,19 @@ function searchKeyChoices(answers: Answers, input = "") {
   return new Promise((resolve) => {
     let choices: (string | separator)[] = [...keyChoices];
 
+    // if there is a previous answer (user is editing), use that as the input
+    if (answers.hotkeyToAdd) choices.unshift(answers.hotkeyToAdd);
+    // After selecting it, remove it from choices array
+    if (input.includes(answers.hotkeyToAdd)) choices = [...keyChoices];
+
     inputTracker = input;
     if (input) {
       // prepend the input to the choices
       choices = choices.map((choice) => {
+        // While iterating, if the choice is the previous answer, return it without modification
+        // Normally this value will be removed from the array after selection...
+        // But if the user modifies that segment of the string, it will be added back to the array
+        if (choice === answers.hotkeyToAdd) return choice;
         return `${input}+ ${choice}`;
       });
     }
@@ -127,7 +142,7 @@ function searchKeyChoices(answers: Answers, input = "") {
   });
 }
 
-function getAppChoices() {
+function searchAppChoices() {
   const apps = hotkeys.map((hotkey) => hotkey[HotkeyColumns.App]);
   return apps.length === 0 ? ["All"] : [...new Set(apps)];
 }
