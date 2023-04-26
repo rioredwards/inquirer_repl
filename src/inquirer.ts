@@ -77,7 +77,8 @@ export const addQuestions: QuestionCollection = [
     suggestOnly: true,
     message: "Add a keyboard shortcut: ",
     source: searchKeyChoices,
-    pageSize: 24,
+    pageSize: 12,
+    loop: true,
     validate: (input: string) => {
       if (!input)
         return "Press TAB to select from the list... or type your own key";
@@ -88,8 +89,7 @@ export const addQuestions: QuestionCollection = [
     type: "confirm",
     name: "askAgain",
     when: (answers: Answers) => answers.hotkeyToAdd !== "",
-    message: (answers) =>
-      `Does this look ok? ${answers.hotkeyToAdd} (hit enter for YES)`,
+    message: (answers) => `Is this ok? ${answers.hotkeyToAdd}`,
     default: true,
   },
 ];
