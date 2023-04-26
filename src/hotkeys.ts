@@ -3,7 +3,7 @@ import { createTable } from "./table.js";
 export enum HotkeyColumns {
   App,
   Hotkey,
-  Name,
+  Description,
 }
 
 export const hotkeys = [

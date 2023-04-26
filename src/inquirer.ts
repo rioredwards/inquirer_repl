@@ -6,6 +6,7 @@ import inquirerPrompt from "inquirer-autocomplete-prompt";
 import { createTable } from "./table.js";
 import { HotkeyColumns, hotkeys } from "./hotkeys.js";
 import separator from "inquirer/lib/objects/separator.js";
+import { countCharsWithEmojis } from "./emojis.js";
 
 type ActionType = "list" | "search" | "add" | "edit" | "delete" | "exit";
 type ActionNameType = "LIST" | "SEARCH" | "ADD" | "EDIT" | "DELETE" | "EXIT";
@@ -77,7 +78,7 @@ export const addQuestions: QuestionCollection = [
     askAnswered: true,
     validate: (input: string) => {
       if (!input)
-        return "TAB: select from list • TYPE: add/modify entry • ENTER: confirm";
+        return "TAB to select from list • TYPE to add/modify entry • ENTER to confirm";
       return true;
     },
   },
@@ -102,7 +103,7 @@ export const addQuestions: QuestionCollection = [
       answers.appIsCorrect && !answers.hotkeyIsCorrect,
     validate: (input: string) => {
       if (!input)
-        return "TAB to select from list • SPACE to add next key • TYPE to add a new key • ENTER to confirm";
+        return "TAB to select from list • SPACE to add next key • TYPE to add/modify entry • ENTER to confirm";
       return true;
     },
     askAnswered: true,
@@ -113,6 +114,35 @@ export const addQuestions: QuestionCollection = [
     message: (answers) => `Is this correct? ${answers.hotkeyToAdd}`,
     when: (answers: Answers) =>
       answers.appIsCorrect && !answers.hotkeyIsCorrect,
+    default: true,
+    askAnswered: true,
+  },
+  {
+    type: "input",
+    name: "descriptionToAdd",
+    message: "Add a description: ",
+    default: (answers: Answers) => answers.descriptionToAdd || null,
+    when: (answers: Answers) =>
+      answers.appIsCorrect &&
+      answers.hotkeyIsCorrect &&
+      !answers.descriptionIsCorrect,
+    validate: (input: string) => {
+      if (!input) return "TYPE to add/modify entry • ENTER to confirm";
+      if (countCharsWithEmojis(input) > 80) {
+        return "Description must be less than 80 characters";
+      }
+      return true;
+    },
+    askAnswered: true,
+  },
+  {
+    type: "confirm",
+    name: "descriptionIsCorrect",
+    message: (answers) => `Is this correct? ${answers.descriptionToAdd}`,
+    when: (answers: Answers) =>
+      answers.appIsCorrect &&
+      answers.hotkeyIsCorrect &&
+      !answers.descriptionIsCorrect,
     default: true,
     askAnswered: true,
   },
