@@ -64,13 +64,13 @@ export const searchQuestions: QuestionCollection = [
 export let inputTracker = "";
 
 export const addQuestions: QuestionCollection = [
-  // {
-  //   type: "list",
-  //   name: "app",
-  //   message: "Select an app",
-  //   choices: getAppChoices(),
-  //   lt: "All",
-  // },
+  {
+    type: "list",
+    name: "app",
+    message: "Select an app",
+    choices: getAppChoices(),
+    lt: "All",
+  },
   {
     type: "addHotkey",
     name: "hotkeyToAdd",
@@ -81,14 +81,13 @@ export const addQuestions: QuestionCollection = [
     loop: true,
     validate: (input: string) => {
       if (!input)
-        return "Press TAB to select from the list... or type your own key";
+        return "TAB to select from list <-> SPACE to add next key <-> TYPE to add a new key <-> ENTER to confirm";
       return true;
     },
   },
   {
     type: "confirm",
-    name: "askAgain",
-    when: (answers: Answers) => answers.hotkeyToAdd !== "",
+    name: "isOkay",
     message: (answers) => `Is this ok? ${answers.hotkeyToAdd}`,
     default: true,
   },

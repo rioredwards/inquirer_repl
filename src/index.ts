@@ -7,7 +7,6 @@ import {
   initializeInquirer,
   searchQuestions,
   shouldAsk,
-  inputTracker,
 } from "./inquirer.js";
 import { listHotkeys } from "./hotkeys.js";
 
@@ -21,10 +20,15 @@ async function main() {
       answers = await inquirer.prompt(searchQuestions, answers);
     }
     if (shouldAsk("add", answers)) {
-      const addAnswers = await inquirer.prompt(addQuestions);
-      console.log("inputTracker: ", inputTracker);
-    }
+      let continueAdding = true;
 
+      async function ask() {
+        const addAnswers = await inquirer.prompt(addQuestions);
+        continueAdding = !addAnswers.isOkay;
+        if (continueAdding) await ask();
+      }
+      if (continueAdding) await ask();
+    }
     if (answers.action === "list") listHotkeys();
     if (answers.action === "exit") process.exit(0);
   } catch (err: any) {
