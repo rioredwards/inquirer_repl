@@ -24,7 +24,8 @@ async function main() {
 
       async function ask(prevAnswers: Answers = {}) {
         const addAnswers = await inquirer.prompt(addQuestions, prevAnswers);
-        continueAdding = !addAnswers.isOkay;
+        continueAdding =
+          !addAnswers.appIsCorrect || !addAnswers.hotkeyIsCorrect;
         if (continueAdding) {
           await ask(addAnswers);
         }
