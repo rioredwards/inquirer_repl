@@ -21,7 +21,6 @@ async function main() {
     }
     if (shouldAsk("add", answers)) {
       let continueAdding = true;
-
       async function ask(prevAnswers: Answers = {}) {
         const addAnswers = await inquirer.prompt(addQuestions, prevAnswers);
         continueAdding =

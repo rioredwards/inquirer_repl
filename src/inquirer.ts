@@ -11,6 +11,33 @@ import { countCharsWithEmojis } from "./emojis.js";
 type ActionType = "list" | "search" | "add" | "edit" | "delete" | "exit";
 type ActionNameType = "LIST" | "SEARCH" | "ADD" | "EDIT" | "DELETE" | "EXIT";
 
+function isActionType(question: ActionType | AddType): question is ActionType {
+  switch (question) {
+    case "list":
+    case "search":
+    case "add":
+    case "edit":
+    case "delete":
+    case "exit":
+      return true;
+    default:
+      return false;
+  }
+}
+
+type AddType = "addApp" | "addHotkey" | "addDescription";
+
+function isAddType(question: ActionType | AddType): question is AddType {
+  switch (question) {
+    case "addApp":
+    case "addHotkey":
+    case "addDescription":
+      return true;
+    default:
+      return false;
+  }
+}
+
 const actionChoices: Array<{ name: ActionNameType; value: ActionType }> = [
   { name: "LIST", value: "list" },
   { name: "SEARCH", value: "search" },
@@ -73,7 +100,7 @@ export const addQuestions: QuestionCollection = [
     source: searchAppChoices,
     loop: true,
     pageSize: 12,
-    when: (answers: Answers) => !answers.appIsCorrect,
+    when: (answers) => shouldAsk("addApp", answers),
     default: (answers: Answers) => answers.appToAdd || null,
     askAnswered: true,
     validate: (input: string) => {
@@ -86,7 +113,7 @@ export const addQuestions: QuestionCollection = [
     type: "confirm",
     name: "appIsCorrect",
     message: (answers) => `Is this correct? ${answers.appToAdd}`,
-    when: (answers: Answers) => !answers.appIsCorrect,
+    when: (answers) => shouldAsk("addApp", answers),
     default: true,
     askAnswered: true,
   },
@@ -99,8 +126,7 @@ export const addQuestions: QuestionCollection = [
     pageSize: 12,
     loop: true,
     default: (answers: Answers) => answers.hotkeyToAdd || null,
-    when: (answers: Answers) =>
-      answers.appIsCorrect && !answers.hotkeyIsCorrect,
+    when: (answers) => shouldAsk("addHotkey", answers),
     validate: (input: string) => {
       if (!input)
         return "TAB to select from list • SPACE to add next key • TYPE to add/modify entry • ENTER to confirm";
@@ -112,8 +138,7 @@ export const addQuestions: QuestionCollection = [
     type: "confirm",
     name: "hotkeyIsCorrect",
     message: (answers) => `Is this correct? ${answers.hotkeyToAdd}`,
-    when: (answers: Answers) =>
-      answers.appIsCorrect && !answers.hotkeyIsCorrect,
+    when: (answers) => shouldAsk("addHotkey", answers),
     default: true,
     askAnswered: true,
   },
@@ -122,14 +147,13 @@ export const addQuestions: QuestionCollection = [
     name: "descriptionToAdd",
     message: "Add a description: ",
     default: (answers: Answers) => answers.descriptionToAdd || null,
-    when: (answers: Answers) =>
-      answers.appIsCorrect &&
-      answers.hotkeyIsCorrect &&
-      !answers.descriptionIsCorrect,
+    when: (answers) => shouldAsk("addDescription", answers),
     validate: (input: string) => {
       if (!input) return "TYPE to add/modify entry • ENTER to confirm";
       if (countCharsWithEmojis(input) > 80) {
-        return "Description must be less than 80 characters";
+        return `Description must be 80 characters or less: (${countCharsWithEmojis(
+          input
+        )} characters)`;
       }
       return true;
     },
@@ -139,10 +163,7 @@ export const addQuestions: QuestionCollection = [
     type: "confirm",
     name: "descriptionIsCorrect",
     message: (answers) => `Is this correct? ${answers.descriptionToAdd}`,
-    when: (answers: Answers) =>
-      answers.appIsCorrect &&
-      answers.hotkeyIsCorrect &&
-      !answers.descriptionIsCorrect,
+    when: (answers) => shouldAsk("addDescription", answers),
     default: true,
     askAnswered: true,
   },
@@ -215,29 +236,45 @@ function searchAppChoices(answers: Answers, input = "") {
 }
 
 // This function determines if the user should be asked a question based on their previous answers
-export function shouldAsk(question: ActionType, answers: Answers) {
-  const action = answers.action;
-  switch (question) {
-    case "search":
-      switch (action) {
-        case "search":
-        case "edit":
-        case "delete":
-          return true;
-        default:
-          return false;
-      }
-    case "add":
-      switch (action) {
-        case "add":
-          return true;
-        default:
-          return false;
-      }
-    case "exit":
-      return false;
-
-    default:
-      return false;
+export function shouldAsk(question: ActionType | AddType, answers: Answers) {
+  if (isActionType(question)) {
+    switch (question) {
+      case "search":
+        switch (answers.action) {
+          case "search":
+          case "edit":
+          case "delete":
+            return true;
+          default:
+            return false;
+        }
+      case "add":
+        switch (answers.action) {
+          case "add":
+            return true;
+          default:
+            return false;
+        }
+      case "exit":
+        return false;
+      default:
+        return false;
+    }
+  }
+  if (isAddType(question)) {
+    switch (question) {
+      case "addApp":
+        return !answers.appIsCorrect;
+      case "addHotkey":
+        return answers.appIsCorrect && !answers.hotkeyIsCorrect;
+      case "addDescription":
+        return (
+          answers.appIsCorrect &&
+          answers.hotkeyIsCorrect &&
+          !answers.descriptionIsCorrect
+        );
+      default:
+        return false;
+    }
   }
 }
