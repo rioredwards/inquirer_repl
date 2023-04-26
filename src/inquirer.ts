@@ -61,44 +61,37 @@ export const searchQuestions: QuestionCollection = [
   },
 ];
 
+export let inputTracker = "";
+
 export const addQuestions: QuestionCollection = [
   // {
   //   type: "list",
   //   name: "app",
   //   message: "Select an app",
   //   choices: getAppChoices(),
-  //   default: "All",
+  //   lt: "All",
   // },
   {
     type: "addHotkey",
     name: "hotkeyToAdd",
     suggestOnly: true,
-    message: (answers: Answers) => {
-      const displayedMessage = answers?.accumulatedValue
-        ? "Add to your keyboard shortcut: " + answers?.accumulatedValue + " + "
-        : "Add a keyboard shortcut: ";
-      return displayedMessage;
-    },
+    message: "Add a keyboard shortcut: ",
     source: searchKeyChoices,
-    // default: (answers: Answers) => {
-    //   const displayedHotkey = answers?.accumulatedValue
-    //     ? `${answers?.accumulatedValue} + _`
-    //     : undefined;
-    //   return displayedHotkey;
-    // },
     pageSize: 24,
     validate: (input: string) => {
-      if (!input) return "Please enter a key";
+      if (!input)
+        return "Press TAB to select from the list... or type your own key";
       return true;
     },
   },
-  // {
-  //   type: "confirm",
-  //   name: "askAgain",
-  //   when: (answers: Answers) => answers.hotkeyToAdd !== "",
-  //   message: "Add another key? (hit enter for YES)",
-  //   default: true,
-  // },
+  {
+    type: "confirm",
+    name: "askAgain",
+    when: (answers: Answers) => answers.hotkeyToAdd !== "",
+    message: (answers) =>
+      `Does this look ok? ${answers.hotkeyToAdd} (hit enter for YES)`,
+    default: true,
+  },
 ];
 
 export const initializeInquirer = () => {
@@ -121,8 +114,15 @@ function searchHotkeys(answers: Answers, input = "") {
 
 function searchKeyChoices(answers: Answers, input = "") {
   return new Promise((resolve) => {
-    const doneChoices = [new inquirer.Separator(), "Done"];
-    const choices = [...keyChoices, ...doneChoices];
+    let choices: (string | separator)[] = [...keyChoices];
+
+    inputTracker = input;
+    if (input) {
+      // prepend the input to the choices
+      choices = choices.map((choice) => {
+        return `${input}+ ${choice}`;
+      });
+    }
 
     resolve(choices);
   });
