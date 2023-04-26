@@ -1,17 +1,17 @@
 // Sandbox for inquirer: https://www.npmjs.com/package/inquirer#prompt
 
 import inquirer, { Answers } from "inquirer";
-import inquirerPrompt from "inquirer-autocomplete-prompt";
 import {
   actionQuestions,
-  listHotkeys,
+  addQuestions,
+  initializeInquirer,
   searchQuestions,
   shouldAsk,
 } from "./inquirer.js";
+import { listHotkeys } from "./hotkeys.js";
 
 async function main() {
-  inquirer.registerPrompt("searchHotkeys", inquirerPrompt);
-  inquirer.registerPrompt("addHotkey", inquirerPrompt);
+  initializeInquirer();
   let answers: Answers;
 
   try {
@@ -19,9 +19,32 @@ async function main() {
     if (shouldAsk("search", answers)) {
       answers = await inquirer.prompt(searchQuestions, answers);
     }
-    // if (shouldAsk("add", answers)) {
-    //   answers = await inquirer.prompt(addQuestions);
-    // }
+    if (shouldAsk("add", answers)) {
+      const keyAccumulator: Answers = {
+        accumulatedValue: "",
+      };
+      let numKeys = 0;
+
+      async function ask() {
+        const addKeyAnswer = await inquirer.prompt(
+          addQuestions,
+          keyAccumulator
+        );
+        numKeys++;
+        if (addKeyAnswer.hotkeyToAdd === "Done") {
+          console.log("Your hotkey: ", keyAccumulator.accumulatedValue);
+          return;
+        }
+        if (numKeys === 1) {
+          keyAccumulator.accumulatedValue = addKeyAnswer.hotkeyToAdd;
+        } else {
+          keyAccumulator.accumulatedValue += " + " + addKeyAnswer.hotkeyToAdd;
+        }
+        await ask();
+      }
+
+      await ask();
+    }
     if (answers.action === "list") listHotkeys();
     if (answers.action === "exit") process.exit(0);
   } catch (err: any) {

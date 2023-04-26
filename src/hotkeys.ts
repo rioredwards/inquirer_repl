@@ -1,3 +1,11 @@
+import { createTable } from "./table.js";
+
+export enum HotkeyColumns {
+  App,
+  Hotkey,
+  Name,
+}
+
 export const hotkeys = [
   ["cowwabungawungazungatunga", "pear", "apple"],
   [
@@ -47,3 +55,8 @@ export const hotkeys = [
   ["", "Yurts in Big Sur, California", ""],
   ["", "", ""],
 ];
+
+export function listHotkeys() {
+  const table = createTable(hotkeys, "full");
+  console.log(table.join("\n"));
+}
