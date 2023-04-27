@@ -163,10 +163,6 @@ export const initializeInquirer = () => {
   inquirer.registerPrompt("addApp", inquirerPrompt);
 };
 
-function selectIndices<T>(array: T[], indices: number[]) {
-  return indices.map((index) => array[index]);
-}
-
 function searchHotkeys(_: Answers, input = "") {
   return new Promise((resolve) => {
     /* const hotkeyIds = hotkeys.map((hotkey) => hotkey[0]);
@@ -184,9 +180,9 @@ function searchHotkeys(_: Answers, input = "") {
       };
     }) as choicesType; */
 
-    // This is the array of strings fuzzy will use to match user input against
+    // Create an array of strings which fuzzy will use to match user input against
     const hotkeysSearchable = hotkeys.map((hotkey) => {
-      return [hotkey[1], hotkey[2], hotkey[3]].toString();
+      return hotkey.slice(1).toString();
     });
 
     // Fuzzy search takes in user input and hotkeysSearchable,
@@ -194,22 +190,19 @@ function searchHotkeys(_: Answers, input = "") {
     const results = fuzzy.filter(input, hotkeysSearchable);
     if (results.length === 0) resolve(["No results found"]);
 
-    // Get the indices of the matching hotkeys
+    // Extract the indices of the matching hotkeys from fuzzy search results
     const idxMatches = results.map((hotkey) => hotkey.index);
 
     // Get the matching hotkeys for the indices returned by fuzzy search
-    // (these still have id's at index 0)
-    const matches = selectIndices(hotkeys, idxMatches);
-
     // Extract hotkey display info and hotkey id's into separate arrays
-    const hotkeyIds = matches.map((match) => match[0]);
-    const hotkeyNoIds = matches.map((match) => [match[1], match[2], match[3]]);
+    const hotkeyIds = idxMatches.map((idx) => hotkeys[idx][0]);
+    const hotkeyNoIds = idxMatches.map((idx) => hotkeys[idx].slice(1));
 
     // Create a table of the hotkeys to display in the terminal (without id's)
     const table = createTable(hotkeyNoIds, "cellsOnly");
 
     // Create the choices array for inquirer: name will come from table, value from hotkeyIds
-    const hotkeyChoices = matches.map((_, idx) => {
+    const hotkeyChoices = idxMatches.map((_, idx) => {
       return {
         value: hotkeyIds[idx],
         name: table[idx].toString(),
