@@ -165,46 +165,31 @@ export const initializeInquirer = () => {
 
 function searchHotkeys(_: Answers, input = "") {
   return new Promise((resolve) => {
-    /* const hotkeyIds = hotkeys.map((hotkey) => hotkey[0]);
-    const hotkeyApps = hotkeys.map((hotkey) => hotkey[1]);
-    const hotkeyKeys = hotkeys.map((hotkey) => hotkey[2]);
-    const hotkeyDescriptions = hotkeys.map((hotkey) => hotkey[3]);
-    const hotkeyChoices = hotkeys.map((_, idx) => {
+    const hotkeyChoicesUnfiltered = hotkeys.map((hotkey) => {
       return {
-        value: hotkeyIds[idx],
-        name: [
-          hotkeyApps[idx],
-          hotkeyKeys[idx],
-          hotkeyDescriptions[idx],
-        ].toString(),
+        value: hotkey[0],
+        name: hotkey.slice(1),
       };
-    }) as choicesType; */
-
-    // Create an array of strings which fuzzy will use to match user input against
-    const hotkeysSearchable = hotkeys.map((hotkey) => {
-      return hotkey.slice(1).toString();
     });
 
     // Fuzzy search takes in user input and hotkeysSearchable,
     // and returns an array of objects with the indices of matching hotkeys
-    const results = fuzzy.filter(input, hotkeysSearchable);
+    const results = fuzzy.filter(input, hotkeyChoicesUnfiltered, {
+      extract: (hotkey) => hotkey.name.toString(),
+    });
+
     if (results.length === 0) resolve(["No results found"]);
 
-    // Extract the indices of the matching hotkeys from fuzzy search results
-    const idxMatches = results.map((hotkey) => hotkey.index);
-
-    // Get the matching hotkeys for the indices returned by fuzzy search
-    // Extract hotkey display info and hotkey id's into separate arrays
-    const hotkeyIds = idxMatches.map((idx) => hotkeys[idx][0]);
-    const hotkeyNoIds = idxMatches.map((idx) => hotkeys[idx].slice(1));
+    // Extract the names of the matching hotkeys from fuzzy search results
+    const hotkeyNamesFiltered = results.map((hotkey) => hotkey.original.name);
 
     // Create a table of the hotkeys to display in the terminal (without id's)
-    const table = createTable(hotkeyNoIds, "cellsOnly");
+    const table = createTable(hotkeyNamesFiltered, "cellsOnly");
 
-    // Create the choices array for inquirer: name will come from table, value from hotkeyIds
-    const hotkeyChoices = idxMatches.map((_, idx) => {
+    // Create the choices array for inquirer: name will come from table, value from fuzzy results id
+    const hotkeyChoices = results.map((_, idx) => {
       return {
-        value: hotkeyIds[idx],
+        value: results[idx].original.value,
         name: table[idx].toString(),
       };
     }) as choicesType;
