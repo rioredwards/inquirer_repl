@@ -19,6 +19,7 @@ async function main() {
     if (shouldAsk("search", answers)) {
       answers = await inquirer.prompt(searchQuestions, answers);
     }
+    console.log("answers (after search): ", answers);
     if (shouldAsk("add", answers)) {
       let continueAdding = true;
       async function ask(prevAnswers: Answers = {}) {

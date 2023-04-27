@@ -51,27 +51,6 @@ const actionChoices: actionChoicesType = [
   { name: "EXIT", value: "exit" },
 ];
 
-// const keyChoices = [
-//   "⇧",
-//   "⌃",
-//   "⌘",
-//   "⌥",
-//   "⇥",
-//   "↩",
-//   "fn",
-//   "space",
-//   "⌫",
-//   "⎋",
-//   "↑",
-//   "↓",
-//   "←",
-//   "→",
-//   "⊞",
-//   "",
-// ];
-
-// keyChoices but they are objects with a name (to display in list), a value (to save in the answers hash)
-
 const keyChoices: choicesType = [
   { name: "⇧ (shift)", value: "⇧" },
   { name: "⌃ (control)", value: "⌃" },
@@ -184,16 +163,61 @@ export const initializeInquirer = () => {
   inquirer.registerPrompt("addApp", inquirerPrompt);
 };
 
+function selectIndices<T>(array: T[], indices: number[]) {
+  return indices.map((index) => array[index]);
+}
+
 function searchHotkeys(_: Answers, input = "") {
   return new Promise((resolve) => {
-    const results = fuzzy.filter(input, hotkeys, {
-      extract: (hotkey) => [...hotkey].toString(),
+    /* const hotkeyIds = hotkeys.map((hotkey) => hotkey[0]);
+    const hotkeyApps = hotkeys.map((hotkey) => hotkey[1]);
+    const hotkeyKeys = hotkeys.map((hotkey) => hotkey[2]);
+    const hotkeyDescriptions = hotkeys.map((hotkey) => hotkey[3]);
+    const hotkeyChoices = hotkeys.map((_, idx) => {
+      return {
+        value: hotkeyIds[idx],
+        name: [
+          hotkeyApps[idx],
+          hotkeyKeys[idx],
+          hotkeyDescriptions[idx],
+        ].toString(),
+      };
+    }) as choicesType; */
+
+    // This is the array of strings fuzzy will use to match user input against
+    const hotkeysSearchable = hotkeys.map((hotkey) => {
+      return [hotkey[1], hotkey[2], hotkey[3]].toString();
     });
 
+    // Fuzzy search takes in user input and hotkeysSearchable,
+    // and returns an array of objects with the indices of matching hotkeys
+    const results = fuzzy.filter(input, hotkeysSearchable);
     if (results.length === 0) resolve(["No results found"]);
-    const matches = results.map((hotkey) => hotkeys[hotkey.index]);
-    const table = createTable(matches, "cellsOnly");
-    resolve(table);
+
+    // Get the indices of the matching hotkeys
+    const idxMatches = results.map((hotkey) => hotkey.index);
+
+    // Get the matching hotkeys for the indices returned by fuzzy search
+    // (these still have id's at index 0)
+    const matches = selectIndices(hotkeys, idxMatches);
+
+    // Extract hotkey display info and hotkey id's into separate arrays
+    const hotkeyIds = matches.map((match) => match[0]);
+    const hotkeyNoIds = matches.map((match) => [match[1], match[2], match[3]]);
+
+    // Create a table of the hotkeys to display in the terminal (without id's)
+    const table = createTable(hotkeyNoIds, "cellsOnly");
+
+    // Create the choices array for inquirer: name will come from table, value from hotkeyIds
+    const hotkeyChoices = matches.map((_, idx) => {
+      return {
+        value: hotkeyIds[idx],
+        name: table[idx].toString(),
+      };
+    }) as choicesType;
+
+    // Finally we have a choices array for inquirer with id's as values and formatted hotkey info as names
+    resolve(hotkeyChoices);
   });
 }
 
@@ -275,7 +299,7 @@ function searchAppChoices(answers: Answers, input = "") {
         choices.unshift(answers.appToAdd);
       }
     }
-    choices.unshift(new inquirer.Separator());
+    // choices.unshift(new inquirer.Separator());
 
     resolve(choices);
   });
