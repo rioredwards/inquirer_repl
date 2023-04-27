@@ -8,6 +8,8 @@ import { HotkeyColumns, hotkeys } from "./hotkeys.js";
 import separator from "inquirer/lib/objects/separator.js";
 import { countCharsWithEmojis } from "./emojis.js";
 
+type choicesType = { name: string; value: string }[];
+
 type ActionType = "list" | "search" | "add" | "edit" | "delete" | "exit";
 type ActionNameType = "LIST" | "SEARCH" | "ADD" | "EDIT" | "DELETE" | "EXIT";
 
@@ -38,7 +40,9 @@ function isAddType(question: ActionType | AddType): question is AddType {
   }
 }
 
-const actionChoices: Array<{ name: ActionNameType; value: ActionType }> = [
+type actionChoicesType = { name: ActionNameType; value: ActionType }[];
+
+const actionChoices: actionChoicesType = [
   { name: "LIST", value: "list" },
   { name: "SEARCH", value: "search" },
   { name: "ADD", value: "add" },
@@ -47,23 +51,44 @@ const actionChoices: Array<{ name: ActionNameType; value: ActionType }> = [
   { name: "EXIT", value: "exit" },
 ];
 
-const keyChoices = [
-  "⇧",
-  "⌃",
-  "⌘",
-  "⌥",
-  "⇥",
-  "↩",
-  "fn",
-  "space",
-  "⌫",
-  "⎋",
-  "↑",
-  "↓",
-  "←",
-  "→",
-  "⊞",
-  "",
+// const keyChoices = [
+//   "⇧",
+//   "⌃",
+//   "⌘",
+//   "⌥",
+//   "⇥",
+//   "↩",
+//   "fn",
+//   "space",
+//   "⌫",
+//   "⎋",
+//   "↑",
+//   "↓",
+//   "←",
+//   "→",
+//   "⊞",
+//   "",
+// ];
+
+// keyChoices but they are objects with a name (to display in list), a value (to save in the answers hash)
+
+const keyChoices: choicesType = [
+  { name: "⇧ (shift)", value: "⇧" },
+  { name: "⌃ (control)", value: "⌃" },
+  { name: "⌘ (command)", value: "⌘" },
+  { name: "⌥ (option)", value: "⌥" },
+  { name: "⇥ (tab)", value: "⇥" },
+  { name: "↩ (return)", value: "↩" },
+  { name: "fn", value: "fn" },
+  { name: "space", value: "space" },
+  { name: "⌫ (delete)", value: "⌫" },
+  { name: "⎋ (escape)", value: "⎋" },
+  { name: "↑ (up)", value: "↑" },
+  { name: "↓ (down)", value: "↓" },
+  { name: "← (left)", value: "←" },
+  { name: "→ (right)", value: "→" },
+  { name: "⊞ (windows)", value: "⊞" },
+  { name: " (apple)", value: "" },
 ];
 
 // name (to display in list), a value (to save in the answers hash), and a short (to display after selection)
@@ -180,25 +205,29 @@ function getLastValEntered(input: string) {
   return lastWordOrChar;
 }
 
-function getIdxLastVal(input: string, choices: string[]) {
+function getIdxLastVal(input: string, choices: choicesType) {
   const lastValEntered = getLastValEntered(input);
   if (!lastValEntered) return null;
   const idxLastVal = choices.findIndex((choice) =>
-    choice.includes(lastValEntered)
+    choice.name.includes(lastValEntered)
   );
   return idxLastVal !== -1 ? idxLastVal : null;
 }
 
 function searchKeyChoices(answers: Answers, input = "") {
   return new Promise((resolve) => {
-    let choices: string[] = [...keyChoices];
-    let updatedChoices: string[] = [];
+    let choices: choicesType = [...keyChoices];
+    let updatedChoices: choicesType = [];
     let idxLastVal = getIdxLastVal(input, choices);
+    const prevAnswer = answers.hotkeyToAdd as string;
 
     // if there is a previous answer (user is editing), add it to the beginning of choices
     // After selecting it, remove it from choices array
-    if (answers.hotkeyToAdd && !input.includes(answers.hotkeyToAdd)) {
-      choices.unshift(answers.hotkeyToAdd);
+    if (prevAnswer && !input.includes(prevAnswer)) {
+      choices.unshift({
+        name: `${prevAnswer} (previous answer)`,
+        value: prevAnswer,
+      });
       if (idxLastVal) idxLastVal++;
     }
 
@@ -218,8 +247,10 @@ function searchKeyChoices(answers: Answers, input = "") {
       // While iterating, if the choice is the previous answer, return it without modification
       // Normally this value will be removed from the array after selection...
       // But if the user modifies that segment of the string, it will be added back to the array
-      if (choice === answers.hotkeyToAdd) return choice;
-      return input ? `${input}+ ${choice}` : choice;
+      if (choice.value === prevAnswer) return choice;
+      const returnVal = input ? `${input}+ ${choice.value}` : choice.value;
+      const returnName = input ? `${input}+ ${choice.name}` : choice.name;
+      return { value: returnVal, name: returnName };
     });
 
     resolve(choices);
@@ -233,7 +264,7 @@ function getAppChoices() {
 
 function searchAppChoices(answers: Answers, input = "") {
   return new Promise((resolve) => {
-    let choices: (string | separator)[] = [...keyChoices];
+    let choices: (string | separator)[];
     choices = getAppChoices();
 
     // If there is a previous answer (user is editing), and user hasn't already selected or modified it
