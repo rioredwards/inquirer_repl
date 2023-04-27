@@ -172,27 +172,55 @@ function searchHotkeys(_: Answers, input = "") {
   });
 }
 
+function getLastValEntered(input: string) {
+  if (!input || input.length === 0) return null;
+  if (input.length === 1) return input;
+  const inputWords = input.trim().split(" ");
+  const lastWordOrChar = inputWords[inputWords.length - 1];
+  return lastWordOrChar;
+}
+
+function getIdxLastVal(input: string, choices: string[]) {
+  const lastValEntered = getLastValEntered(input);
+  if (!lastValEntered) return null;
+  const idxLastVal = choices.findIndex((choice) =>
+    choice.includes(lastValEntered)
+  );
+  return idxLastVal !== -1 ? idxLastVal : null;
+}
+
 function searchKeyChoices(answers: Answers, input = "") {
   return new Promise((resolve) => {
-    let choices: (string | separator)[] = [...keyChoices];
+    let choices: string[] = [...keyChoices];
+    let updatedChoices: string[] = [];
+    let idxLastVal = getIdxLastVal(input, choices);
 
     // if there is a previous answer (user is editing), add it to the beginning of choices
-    if (answers.hotkeyToAdd) choices.unshift(answers.hotkeyToAdd);
     // After selecting it, remove it from choices array
-    if (input.includes(answers.hotkeyToAdd)) choices = [...keyChoices];
-
-    if (input) {
-      // prepend the input to the choices
-      choices = choices.map((choice) => {
-        // While iterating, if the choice is the previous answer, return it without modification
-        // Normally this value will be removed from the array after selection...
-        // But if the user modifies that segment of the string, it will be added back to the array
-        if (choice === answers.hotkeyToAdd) return choice;
-        return `${input}+ ${choice}`;
-      });
+    if (answers.hotkeyToAdd && !input.includes(answers.hotkeyToAdd)) {
+      choices.unshift(answers.hotkeyToAdd);
+      if (idxLastVal) idxLastVal++;
     }
 
-    choices.unshift(new inquirer.Separator());
+    // This is a hack to keep the choices from jumping around while typing
+    if (idxLastVal) {
+      // Match the last input value to the choices array
+      // and rearrange the choices array so that the last input value is first
+      const foundVal = choices[idxLastVal];
+      const valuesBefore = choices.slice(0, idxLastVal);
+      const valuesAfter = choices.slice(idxLastVal + 1);
+      updatedChoices = [foundVal, ...valuesAfter, ...valuesBefore];
+    }
+
+    if (updatedChoices.length !== 0) choices = updatedChoices;
+    // prepend the input to the choices
+    choices = choices.map((choice) => {
+      // While iterating, if the choice is the previous answer, return it without modification
+      // Normally this value will be removed from the array after selection...
+      // But if the user modifies that segment of the string, it will be added back to the array
+      if (choice === answers.hotkeyToAdd) return choice;
+      return input ? `${input}+ ${choice}` : choice;
+    });
 
     resolve(choices);
   });
