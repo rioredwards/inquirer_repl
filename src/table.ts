@@ -16,7 +16,7 @@ const topSeparator = "┬";
 const bottomSeparator = "┴";
 const padding = " ".repeat(2);
 
-const MAX_WIDTH_PER_COLUMN = [16, 16, 80];
+export const MAX_WIDTH_PER_COLUMN = [16, 16, 80];
 
 function customPadEnd(str: string, length: number, fill: string = " ") {
   const chars = countCharsWithEmojis(str);

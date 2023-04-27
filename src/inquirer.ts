@@ -103,11 +103,7 @@ export const addQuestions: QuestionCollection = [
     when: (answers) => shouldAsk("addApp", answers),
     default: (answers: Answers) => answers.appToAdd || null,
     askAnswered: true,
-    validate: (input: string) => {
-      if (!input)
-        return "TAB to select from list • TYPE to add/modify entry • ENTER to confirm";
-      return true;
-    },
+    validate: (input: string) => answerIsValid("addApp", input),
   },
   {
     type: "confirm",
@@ -127,11 +123,7 @@ export const addQuestions: QuestionCollection = [
     loop: true,
     default: (answers: Answers) => answers.hotkeyToAdd || null,
     when: (answers) => shouldAsk("addHotkey", answers),
-    validate: (input: string) => {
-      if (!input)
-        return "TAB to select from list • SPACE to add next key • TYPE to add/modify entry • ENTER to confirm";
-      return true;
-    },
+    validate: (input: string) => answerIsValid("addHotkey", input),
     askAnswered: true,
   },
   {
@@ -148,15 +140,7 @@ export const addQuestions: QuestionCollection = [
     message: "Add a description: ",
     default: (answers: Answers) => answers.descriptionToAdd || null,
     when: (answers) => shouldAsk("addDescription", answers),
-    validate: (input: string) => {
-      if (!input) return "TYPE to add/modify entry • ENTER to confirm";
-      if (countCharsWithEmojis(input) > 80) {
-        return `Description must be 80 characters or less: (${countCharsWithEmojis(
-          input
-        )} characters)`;
-      }
-      return true;
-    },
+    validate: (input: string) => answerIsValid("addDescription", input),
     askAnswered: true,
   },
   {
@@ -276,5 +260,39 @@ export function shouldAsk(question: ActionType | AddType, answers: Answers) {
       default:
         return false;
     }
+  }
+}
+
+// Call this function to validate answers
+export function answerIsValid(question: AddType, answer: any) {
+  switch (question) {
+    case "addApp":
+      if (!answer)
+        return "TAB to select from list • TYPE to add/modify entry • ENTER to confirm";
+      if (countCharsWithEmojis(answer) > 16) {
+        return `App name must be 16 characters or less: (${countCharsWithEmojis(
+          answer
+        )} characters)`;
+      }
+      return true;
+    case "addHotkey":
+      if (!answer)
+        return "TAB to select from list • SPACE to add next key • TYPE to add/modify entry • ENTER to confirm";
+      if (countCharsWithEmojis(answer) > 16) {
+        return `App name must be 16 characters or less: (${countCharsWithEmojis(
+          answer
+        )} characters)`;
+      }
+      return true;
+    case "addDescription":
+      if (!answer) return "TYPE to add/modify entry • ENTER to confirm";
+      if (countCharsWithEmojis(answer) > 80) {
+        return `Description must be 80 characters or less: (${countCharsWithEmojis(
+          answer
+        )} characters)`;
+      }
+      return true;
+    default:
+      return false;
   }
 }
