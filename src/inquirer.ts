@@ -159,7 +159,7 @@ export const initializeInquirer = () => {
   inquirer.registerPrompt("addApp", inquirerPrompt);
 };
 
-function searchHotkeys(answers: Answers, input = "") {
+function searchHotkeys(_: Answers, input = "") {
   return new Promise((resolve) => {
     const results = fuzzy.filter(input, hotkeys, {
       extract: (hotkey) => [...hotkey].toString(),
@@ -192,6 +192,8 @@ function searchKeyChoices(answers: Answers, input = "") {
       });
     }
 
+    choices.unshift(new inquirer.Separator());
+
     resolve(choices);
   });
 }
@@ -214,6 +216,7 @@ function searchAppChoices(answers: Answers, input = "") {
         choices.unshift(answers.appToAdd);
       }
     }
+    choices.unshift(new inquirer.Separator());
 
     resolve(choices);
   });
